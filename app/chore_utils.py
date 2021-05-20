@@ -24,7 +24,7 @@ def get_valid_chore_names() -> List[str]:
 def is_chore_valid(
         chore_name: str
 ) -> bool:
-    return chore_name.lower() in get_valid_chore_names()
+    return chore_name.lower().strip() in get_valid_chore_names()
 
 
 def record_chore_completion_csv(
