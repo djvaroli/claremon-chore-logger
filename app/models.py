@@ -4,7 +4,6 @@ from enum import Enum
 
 from pydantic import BaseModel
 
-
 class ChoreCompletionPostRequest(BaseModel):
     chore_name: str
     completed_by: str
