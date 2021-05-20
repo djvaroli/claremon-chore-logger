@@ -2,7 +2,7 @@ from typing import *
 import logging
 import random
 
-from fastapi import FastAPI, Form, Response
+from fastapi import FastAPI, Form, Response, HTTPException
 from twilio.twiml.messaging_response import MessagingResponse
 
 from redis_utils import get_phone_number_resident
@@ -34,7 +34,7 @@ async def record_chore_completion_from_sms(
     # get the name of
     resident = get_phone_number_resident(str(From))
     if resident is None:
-        raise Exception("User authentication failed.")
+        raise HTTPException(status_code=403, detail="You do not have access to this resource.")
 
     # verify that the body is a valid chore
     if not is_chore_valid(Body):
