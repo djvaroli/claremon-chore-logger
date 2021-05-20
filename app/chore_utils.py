@@ -5,9 +5,10 @@ import logging
 
 from elasticsearch import ElasticsearchException
 
+
 from elasticsearch_utils import get_es_client
 from redis_utils import get_redis_client
-from utilities import write_log_entry_to_file
+from utilities import find_closest_match
 
 
 def get_valid_chore_names() -> List[str]:
@@ -22,19 +23,20 @@ def get_valid_chore_names() -> List[str]:
 
 
 def is_chore_valid(
-        chore_name: str
-) -> bool:
-    return chore_name.lower().strip() in get_valid_chore_names()
-
-
-def record_chore_completion_csv(
         chore_name: str,
-        completed_by: str
-):
-    completion_date = dt.now().strftime("%B-%d-%YT%H:%M")
-    completion_timestamp = int(time.time())
+        threshold: float = 0.93
+) -> Tuple[bool, str, float]:
+    # clean data
+    chore_name = chore_name.lower().strip()
 
-    return write_log_entry_to_file(chore_name, completed_by, completion_date, completion_timestamp)
+    # set the threshold to 0.99 for bathroom cases, because those are very similar
+    if "bathroom" in chore_name:
+        threshold = 0.99
+
+    # perform string matching, in case someone made a typo
+    best_match, sim_score = find_closest_match(chore_name, get_valid_chore_names(), threshold=threshold)
+    is_valid_chore_name = best_match is not None
+    return is_valid_chore_name, best_match, sim_score
 
 
 def record_chore_completion_elastic(

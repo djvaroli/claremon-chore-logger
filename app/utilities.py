@@ -1,35 +1,39 @@
 import os
+from typing import *
+
 import csv
 from pathlib import Path
 from datetime import datetime as dt
 
-
-COLUMN_TITLES = ['Chore Name', 'Completed By', 'Date', 'Timestamp']
+from Levenshtein import distance, jaro_winkler, jaro
 
 
 def get_now_date_key():
     return dt.now().strftime("%B-%d-%Y").lower()
 
 
-def write_log_entry_to_file(
-        chore_name: str,
-        completed_by: str,
-        date: str,
-        timestamp: int,
-        path_to_file: str = "claremon_chore_logs.csv"
-) -> int:
-    mode = "w+"
-    add_columns = False
-    if os.path.exists(path_to_file) is False:
-        mode = "a+"
-        add_columns = True
+def find_closest_match(
+    to_match: str,
+    values: List[str],
+    threshold: float = 0.93,
+    method: str = "jaro_winkler"
+) -> Tuple[Union[str, None], float]:
+    if method not in ['jaro_winkler', 'jaro']:
+        raise ValueError(f"Method must be one of ['jaro_winkler', 'jaro']")
 
-    row = [chore_name, completed_by, date, timestamp]
-    with open(path_to_file, mode=mode) as f:
-        csv_writer = csv.writer(f, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-        if add_columns:
-            csv_writer.writerow(COLUMN_TITLES)
+    method_function_map = {
+        "jaro_winkler": jaro_winkler,
+        "jaro": jaro
+    }
+    f = method_function_map.get(method)
 
-        csv_writer.writerow(row)
+    match_scores = []
+    for value in set(values):
+        if f(value, to_match) >= threshold:
+            match_scores.append({"value": value, "score": round(f(value, to_match), 4)})
 
-    return 1
+    if not match_scores:
+        return None, 0.0
+
+    match_scores = sorted(match_scores, key=lambda blob: blob['score'], reverse=True)
+    return match_scores[0]['value'], match_scores[0]['score']
