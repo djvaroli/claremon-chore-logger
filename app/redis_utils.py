@@ -21,19 +21,6 @@ def get_redis_client():
     )
 
 
-def get_phone_number_resident(
-        phone_number: str
-) -> str:
-    hash_name = f"claremon-chore-logger::phone_number>resident"
-    redis_client = get_redis_client()
-
-    resident = None
-    if redis_client.hexists(hash_name, key=phone_number):
-        resident = redis_client.hget(name=hash_name, key=phone_number).decode()
-
-    return resident
-
-
 def set_keys_in_redis_hash(
         hash_name: str,
         key_values: dict

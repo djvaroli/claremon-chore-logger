@@ -1,11 +1,13 @@
-import os
 from typing import *
-
-import csv
-from pathlib import Path
+import re
 from datetime import datetime as dt
 
-from Levenshtein import distance, jaro_winkler, jaro
+from Levenshtein import jaro_winkler, jaro
+
+from chore_utils import get_chore_history, get_valid_chore_names
+from residents_utils import get_residents_names
+
+VALID_ACTIONS = ['get']
 
 
 def get_now_date_key():
@@ -37,3 +39,37 @@ def find_closest_match(
 
     match_scores = sorted(match_scores, key=lambda blob: blob['score'], reverse=True)
     return match_scores[0]['value'], match_scores[0]['score']
+
+
+def clean_and_split_string(s: str):
+    return re.sub('[^A-Za-z0-9]+', ' ', s).lower().split()
+
+
+def validate_sms_action(action):
+    return action in VALID_ACTIONS
+
+
+def get_operation_for_action(action):
+    assert validate_sms_action(action), f"Invalid action {action}."
+
+    action_op_map = {
+        "get": get_chore_history
+    }
+    return action_op_map[action]
+
+
+def figure_out_query_field(
+        name: str
+) -> Union[str, None]:
+    valid_chores = get_valid_chore_names()
+    valid_resident_names = get_residents_names()
+
+    if name.lower() in valid_chores:
+        return "chore_name"
+
+    if name.lower() in valid_resident_names:
+        return "completed_by"
+
+    return
+
+
