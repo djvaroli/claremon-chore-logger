@@ -3,7 +3,9 @@ from typing import *
 from urllib.parse import urlparse
 
 import redis
+from dotenv import load_dotenv
 
+load_dotenv()
 REDIS_URL = urlparse(os.environ.get("REDIS_URL"))
 
 
@@ -16,17 +18,6 @@ def get_redis_client():
         ssl=True,
         ssl_cert_reqs=None
     )
-
-
-def get_valid_chore_names() -> List[str]:
-    key = f"claremon-chore-logger::chores"
-    redis_client = get_redis_client()
-
-    if redis_client.exists(key):
-        all_chores = redis_client.get(key).decode().split(",")
-        return all_chores
-
-    raise Exception(f"Key {key} does not exist.")
 
 
 def get_phone_number_resident(
