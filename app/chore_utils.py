@@ -3,6 +3,8 @@ from typing import *
 from datetime import datetime as dt
 import logging
 
+from elasticsearch import ElasticsearchException
+
 from elasticsearch_utils import get_es_client
 from redis_utils import get_redis_client
 from utilities import write_log_entry_to_file
@@ -47,4 +49,9 @@ def record_chore_completion_elastic(
         "completed_by": completed_by
     }
 
-    return es.index(body=document, index="chore-logs")
+    try:
+        result = es.index(body=document, index="chore-logs")
+    except ElasticsearchException as e:
+        result = {"result": "failed", "error": e}
+
+    return result

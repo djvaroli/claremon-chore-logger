@@ -1,5 +1,6 @@
 import os
 from typing import *
+import logging
 from urllib.parse import urlparse
 
 import redis
@@ -15,7 +16,7 @@ def get_redis_client():
         port=REDIS_URL.port,
         username=REDIS_URL.username,
         password=REDIS_URL.password,
-        ssl=True,
+        ssl=False,
         ssl_cert_reqs=None
     )
 

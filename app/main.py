@@ -8,16 +8,15 @@ from twilio.twiml.messaging_response import MessagingResponse
 from redis_utils import get_phone_number_resident
 from chore_utils import is_chore_valid, record_chore_completion_elastic, get_valid_chore_names
 
-
 logger = logging.getLogger("Claremon Chore Logger")
 logger.setLevel(logging.INFO)
 
 app = FastAPI()
 
 
-@app.get("/")
+@app.get("/", status_code=200)
 async def home():
-    return {"status": "ok"}
+    return "Welcome to Claremon Chore logger!"
 
 
 @app.post("/chore/record_from_sms")
@@ -26,13 +25,14 @@ async def record_chore_completion_from_sms(
     Body: str = Form(default=None)
 ):
     # TODO refactor to remove duplicating code
-
+    logger.info(f"From: {From}, Body: {Body}.")
     # set up the messaging response
     resp = MessagingResponse()
     response_message = "If you are seeing this, something went horribly wrong :(."
 
     # get the name of
     resident = get_phone_number_resident(str(From))
+    logger.info(f"Resident: {resident}")
     if resident is None:
         raise HTTPException(status_code=403, detail="You do not have access to this resource.")
 
@@ -50,6 +50,9 @@ async def record_chore_completion_from_sms(
         response_message = f"Thank you for {Body.capitalize()}, {resident.capitalize()}!"
         if random.uniform(0, 1.0) > 0.95:
             response_message += f"\n. They are plotting against you {resident.capitalize()}! Strike before they do!"
+    else:
+        logger.warning(str(result))
+        response_message = f"Unfortunately, something went wrong. You should ask Daniel."
 
     msg = resp.message(response_message)
     return Response(content=str(resp), media_type="text/xml")
