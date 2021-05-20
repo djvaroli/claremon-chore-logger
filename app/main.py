@@ -3,8 +3,8 @@ import logging
 from fastapi import FastAPI, Form, Response, HTTPException
 from twilio.twiml.messaging_response import MessagingResponse
 
-from chore_utils import record_chore_completion
-from utilities import clean_and_split_string, validate_sms_action, get_operation_for_action
+from chore_utils import record_chore_completion, _get_operation_for_chore_action
+from utilities import clean_and_split_string, validate_sms_action
 
 logger = logging.getLogger("Claremon Chore Logger")
 logger.setLevel(logging.INFO)
@@ -33,13 +33,14 @@ async def record_chore_completion_from_sms(
             action, name, count = request_command
         except ValueError as e:
             # the 5 is the default count
-            action, name, count = request_command.append(5)
+            request_command = request_command + [5]
+            action, name, count = request_command
 
         if not validate_sms_action(action):
             resp.message(f"{action.capitalize()} is not a valid command.")
             return Response(content=str(resp), media_type="text/xml")
 
-        op = get_operation_for_action(action)
+        op = _get_operation_for_chore_action(action)
 
     elif len(request_command) == 1:
         op = record_chore_completion

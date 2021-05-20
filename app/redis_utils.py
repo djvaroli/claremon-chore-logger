@@ -16,7 +16,7 @@ def get_redis_client():
         port=REDIS_URL.port,
         username=REDIS_URL.username,
         password=REDIS_URL.password,
-        ssl=False,
+        ssl=True,
         ssl_cert_reqs=None
     )
 

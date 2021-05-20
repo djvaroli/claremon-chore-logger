@@ -9,8 +9,8 @@ from dateutil import parser
 
 from elasticsearch_utils import get_es_client
 from redis_utils import get_redis_client
-from residents_utils import get_phone_number_resident
-from utilities import find_closest_match, figure_out_query_field
+from residents_utils import get_phone_number_resident, get_residents_names
+from utilities import find_closest_match, validate_sms_action
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,26 +45,6 @@ def is_chore_valid(
     return is_valid_chore_name, best_match, sim_score
 
 
-def record_chore_completion_elastic(
-        chore_name: str,
-        completed_by: str
-):
-    es = get_es_client()
-    document = {
-        "completion_date": dt.now(),
-        "timestamp": int(time.time()) * 1000, # convert to ms for elasticsearch
-        "chore_name": chore_name,
-        "completed_by": completed_by
-    }
-
-    try:
-        result = es.index(body=document, index="chore-logs")
-    except ElasticsearchException as e:
-        result = {"result": "failed", "error": e}
-
-    return result
-
-
 def get_chore_history(
         request_command: List[str],
         index: str = "chore-logs",
@@ -73,9 +53,12 @@ def get_chore_history(
 ):
     command, name, count = request_command
     assert command.lower() == 'get', f"Invalid command {command}."
-    es_field_for_name = figure_out_query_field(name)
+    es_field_for_name = _figure_out_query_field(name)
     es_query = {
         "size": count,
+        "sort": [
+            {"completion_date": {"order": "desc"}}
+        ],
         "query": {
             "bool": {
                 "must": [
@@ -96,18 +79,18 @@ def get_chore_history(
     message = ''
 
     if es_field_for_name == "chore_name":
-        message = f"History for chore {name}.\n"
+        message = f"History ({count} most recent) for chore {name.capitalize()}.\n\n"
         for h in hits:
             completed_by = h['completed_by']
-            completion_date = parser.parse(h['completion_date']).strftime('%B-%d-%Y')
-            message += f"{completed_by} @{completion_date}.\n"
+            completion_date = parser.parse(h['completion_date']).strftime('%B-%d %I:%M %p')
+            message += f"{completed_by.capitalize()} @{completion_date}.\n"
 
     if es_field_for_name == "completed_by":
-        message = f"History for {name}.\n"
+        message = f"History ({count} most recent) for {name.capitalize()}.\n\n"
         for h in hits:
             chore_name = h['chore_name']
-            completion_date = parser.parse(h['completion_date']).strftime('%B-%d-%Y')
-            message += f"{chore_name} @{completion_date}.\n"
+            completion_date = parser.parse(h['completion_date']).strftime('%B-%d %I:%M %p')
+            message += f"{chore_name.capitalize()} @{completion_date}.\n"
 
     return message, 200
 
@@ -156,3 +139,47 @@ def record_chore_completion(
         response_message = f"Unfortunately, something went wrong. You should ask Daniel."
 
     return response_message, status_code
+
+
+def record_chore_completion_elastic(
+        chore_name: str,
+        completed_by: str
+):
+    es = get_es_client()
+    document = {
+        "completion_date": dt.now(),
+        "timestamp": int(time.time()) * 1000, # convert to ms for elasticsearch
+        "chore_name": chore_name,
+        "completed_by": completed_by
+    }
+
+    try:
+        result = es.index(body=document, index="chore-logs")
+    except ElasticsearchException as e:
+        result = {"result": "failed", "error": e}
+
+    return result
+
+
+def _get_operation_for_chore_action(action):
+    assert validate_sms_action(action), f"Invalid action {action}."
+
+    action_op_map = {
+        "get": get_chore_history
+    }
+    return action_op_map[action]
+
+
+def _figure_out_query_field(
+        name: str
+) -> Union[str, None]:
+    valid_chores = get_valid_chore_names()
+    valid_resident_names = get_residents_names()
+
+    if name.lower() in valid_chores:
+        return "chore_name"
+
+    if name.lower() in valid_resident_names:
+        return "completed_by"
+
+    return None

@@ -4,8 +4,6 @@ from datetime import datetime as dt
 
 from Levenshtein import jaro_winkler, jaro
 
-from chore_utils import get_chore_history, get_valid_chore_names
-from residents_utils import get_residents_names
 
 VALID_ACTIONS = ['get']
 
@@ -48,28 +46,5 @@ def clean_and_split_string(s: str):
 def validate_sms_action(action):
     return action in VALID_ACTIONS
 
-
-def get_operation_for_action(action):
-    assert validate_sms_action(action), f"Invalid action {action}."
-
-    action_op_map = {
-        "get": get_chore_history
-    }
-    return action_op_map[action]
-
-
-def figure_out_query_field(
-        name: str
-) -> Union[str, None]:
-    valid_chores = get_valid_chore_names()
-    valid_resident_names = get_residents_names()
-
-    if name.lower() in valid_chores:
-        return "chore_name"
-
-    if name.lower() in valid_resident_names:
-        return "completed_by"
-
-    return
 
 
