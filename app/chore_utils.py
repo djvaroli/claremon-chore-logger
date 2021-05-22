@@ -128,11 +128,12 @@ def record_chore_completion(
         status_code = 201
 
         if match_score < 1.0:
-            response_message += f"There is a {match_score * 100: .2f}% chance you wanted to say {chore_name}."
+            response_message += f"There is a {match_score * 100: .2f}% chance you wanted to say {chore_name}.\n"
 
-        response_message += f"\n Thank you for {chore_name}, {resident.capitalize()}!"
+        chore_completion_message = _get_chore_completion_message(chore_name)
+        response_message += f"{chore_completion_message}, {resident.capitalize()}!\n"
         if random.uniform(0, 1.0) > 0.95:
-            response_message += f"\n They are plotting against you {resident.capitalize()}! Strike before they do!"
+            response_message += f"They are plotting against you {resident.capitalize()}! Strike before they do!"
     else:
         logging.warning(str(result))
         status_code = 500
@@ -183,3 +184,15 @@ def _figure_out_query_field(
         return "completed_by"
 
     return None
+
+
+def _get_chore_completion_message(chore_name: str) -> Union[str, None]:
+    hash_name = f"claremon-chore-logger::chore-completion-message"
+    redis_client = get_redis_client()
+
+    if redis_client.hexists(hash_name, chore_name):
+        return redis_client.hget(hash_name, chore_name).decode()
+
+    return f"Thank you for completing task {chore_name.capitalize()}"
+
+

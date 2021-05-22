@@ -51,9 +51,6 @@ async def record_chore_completion_from_sms(
 
     message, status_code = op(request_command=request_command, from_=from_)
 
-    if not (200 <= status_code <= 299):
-        raise HTTPException(status_code=status_code, detail=message)
-
     msg = resp.message(message)
     return Response(content=str(resp), media_type="text/xml")
 
