@@ -66,7 +66,6 @@ def get_query_for_chore_history(
 
 
 def chore_history_filter_query(
-        filter_query: str,
         sort_field: str = "completion_date",
         sort_order: str = "desc",
         count: int = 20,
@@ -74,7 +73,6 @@ def chore_history_filter_query(
 ):
     """
 
-    :param filter_query:
     :param sort_field:
     :param sort_order:
     :param count:
@@ -87,22 +85,10 @@ def chore_history_filter_query(
         "sort": [
             {sort_field: {"order": sort_order}}
         ],
-        "query": {}
-    }
-
-    if not filter_query:
-        query['query'] = {
+        "query": {
             "match_all": {}
         }
-    else:
-        query['query'] = {
-            "multi_match": {
-                "query": filter_query,
-                "type": "phrase",
-                "fields": ["completed_by.raw", "chore_name.raw"],
-                "tie_breaker": 0.3,
-            }
-        }
+    }
 
     return query
 

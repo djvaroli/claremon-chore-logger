@@ -200,11 +200,27 @@ def get_chore_history(
     :param index:
     :return:
     """
-    query = chore_history_filter_query(filter_query, sort_field, sort_order, count, offset)
+
+    def _filter_hits_by_query(hits_: List[dict], query_: str):
+        if not query_:
+            return hits_
+
+        filter_fields_ = ['completed_by', 'chore_name']
+        filtered_hits_ = []
+        for hit_ in hits_:
+            for filter_field_ in filter_fields_:
+                value_: str = hit_.get(filter_field_)
+                print(value_)
+                if value_ and value_.__contains__(query_.lower().strip()):
+                    filtered_hits_.append(hit_)
+        return filtered_hits_
+
+    query = chore_history_filter_query(sort_field, sort_order, count, offset)
     es = get_es_client()
     hits = es.search(index=index, body=query)['hits']['hits']
+    hits = [h['_source'] for h in hits]
     data = {
-        "documents": [h['_source'] for h in hits],
+        "documents": _filter_hits_by_query(hits, filter_query),
         "document_count": get_document_count_for_query(query, index)
     }
     return data
