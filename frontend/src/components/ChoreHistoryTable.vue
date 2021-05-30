@@ -1,11 +1,12 @@
 <template>
   <section>
     <b-field>
-      <b-input placeholder="Search..."
+      <b-input placeholder="Filter results..."
                v-model="filterTerm"
                type="search"
                icon="magnify"
-               @keyup.native="fetchChoreHistory"
+               @input="fetchChoreHistory"
+               rounded
                >
       </b-input>
     </b-field>
@@ -61,11 +62,16 @@ export default {
       defaultSortOrder: 'desc',
       filterTerm: '',
       fetching: false,
-      fetchDebounce: 100
+      cancelToken: null
     }
   },
   methods: {
     fetchChoreHistory() {
+      if (this.cancelToken !== null) this.cancelToken.cancel();
+
+      const cancelTokenSource = axios.CancelToken.source();
+      this.cancelToken = cancelTokenSource
+
       this.loading = true;
       axios.get("http://127.0.0.1:8003/chore/history", {
         params: {
@@ -74,7 +80,8 @@ export default {
           sortOrder: this.sortOrder,
           count: this.perPage,
           offset: (this.page - 1) * this.perPage,
-        }
+        },
+        cancelToken: cancelTokenSource.token
       })
       .then((response) => {
         this.data = []; // reset the data
