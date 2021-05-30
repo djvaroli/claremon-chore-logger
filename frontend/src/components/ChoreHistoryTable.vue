@@ -1,6 +1,5 @@
 <template>
   <section>
-    {{data}}
     <b-field>
       <b-input placeholder="Search..."
                v-model="filterTerm"
