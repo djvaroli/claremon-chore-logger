@@ -1,17 +1,17 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <div id="app" class="container">
+    <ChoreHistoryTable />
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+// import ChoreHistorySearch from "./components/ChoreHistorySearch";
+import ChoreHistoryTable from "./components/ChoreHistoryTable";
 
 export default {
   name: 'App',
   components: {
-    HelloWorld
+    ChoreHistoryTable
   }
 }
 </script>

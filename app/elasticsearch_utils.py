@@ -64,3 +64,67 @@ def get_query_for_chore_history(
 
     return query
 
+
+def chore_history_filter_query(
+        filter_query: str,
+        sort_field: str = "completion_date",
+        sort_order: str = "desc",
+        count: int = 20,
+        offset: int = 0
+):
+    """
+
+    :param filter_query:
+    :param sort_field:
+    :param sort_order:
+    :param count:
+    :param offset:
+    :return:
+    """
+    query = {
+        "size": count,
+        "from": offset,
+        "sort": [
+            {sort_field: {"order": sort_order}}
+        ],
+        "query": {}
+    }
+
+    if not filter_query:
+        query['query'] = {
+            "match_all": {}
+        }
+    else:
+        query['query'] = {
+            "multi_match": {
+                "query": filter_query,
+                "type": "phrase",
+                "fields": ["completed_by.raw", "chore_name.raw"],
+                "tie_breaker": 0.3,
+            }
+        }
+
+    return query
+
+
+def get_document_count_for_query(
+        query: dict,
+        index: str
+):
+    """
+
+    :param query:
+    :param index:
+    :return:
+    """
+    fields_to_strip = ['size', 'from', 'sort', 'source']
+    es = get_es_client()
+    query_stripped = query.copy()
+    for field in fields_to_strip:
+        query_stripped.pop(field, None)
+
+    count = es.count(body=query_stripped, index=index)
+    if count:
+        return count['count']
+    return 0
+

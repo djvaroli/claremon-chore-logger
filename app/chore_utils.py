@@ -7,7 +7,7 @@ import random
 from elasticsearch import ElasticsearchException
 from dateutil import parser
 
-from elasticsearch_utils import get_es_client
+from elasticsearch_utils import get_es_client, chore_history_filter_query, get_document_count_for_query
 from redis_utils import get_redis_client
 from residents_utils import get_phone_number_resident, get_residents_names
 from utilities import find_closest_match, validate_sms_action
@@ -183,19 +183,29 @@ def _get_chore_completion_message(chore_name: str) -> Union[str, None]:
 
 
 def get_chore_history(
-        filter_term: str,
-        filter_field: str = "completed_by",
-        sort_direction: str = "desc",
+        filter_query: str,
+        sort_field: str = "completed_by",
+        sort_order: str = "desc",
         count: int = 20,
         offset: int = 0,
         index: str = "chore-logs"
 ):
     """
 
+    :param filter_query:
+    :param sort_field:
+    :param sort_order:
+    :param count:
+    :param offset:
+    :param index:
     :return:
     """
-    query = get_query_for_chore_history(filter_term, filter_field, sort_direction, count, offset)
+    query = chore_history_filter_query(filter_query, sort_field, sort_order, count, offset)
     es = get_es_client()
     hits = es.search(index=index, body=query)['hits']['hits']
+    data = {
+        "documents": [h['_source'] for h in hits],
+        "document_count": get_document_count_for_query(query, index)
+    }
+    return data
 
-    return [h['_source'] for h in hits]

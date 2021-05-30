@@ -1,16 +1,27 @@
 import logging
+import os
 
 from fastapi import FastAPI, Form, Response, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from twilio.twiml.messaging_response import MessagingResponse
+from dotenv import load_dotenv
 
 from chore_utils import record_chore_completion, _get_operation_for_chore_action, get_chore_history
 from utilities import clean_and_split_string, validate_sms_action
-from request_models import ChoreHistorySearchRequest
 
+load_dotenv(".env")
 logger = logging.getLogger("Claremon Chore Logger")
 logger.setLevel(logging.INFO)
+origins = os.environ.get("ORIGINS", "").split(";")
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["POST", "GET"],
+    allow_headers=["*"]
+)
 
 
 @app.get("/", status_code=200)
@@ -58,28 +69,28 @@ async def record_chore_completion_from_sms(
 
 @app.get("/chore/history")
 async def search_chore_history(
-        filter_term: str,
-        sort_direction: str = "desc",
-        filter_field: str = "completed_by",
+        filterTerm: str,
+        sortField: str = "completion_date",
+        sortOrder: str = "desc",
         count: int = 20,
         offset: int = 0
 ):
     """
 
-    :param filter_term:
-    :param sort_direction:
-    :param filter_field:
+    :param filterTerm:
+    :param sortField:
+    :param sortOrder:
     :param count:
     :param offset:
     :return:
     """
-    filter_term = str(filter_term).lower()
-    filter_field = str(filter_field).lower()
-    sort_direction = str(sort_direction).lower()
+    filter_term = str(filterTerm).lower()
+    sort_field = str(sortField).lower()
+    sort_order = str(sortOrder).lower()
     count = int(count)
     offset = int(offset)
-
-    return get_chore_history(filter_term, filter_field, sort_direction, count, offset)
+    print(filter_term, sort_field, sort_order)
+    return get_chore_history(filter_term, sort_field, sort_order, count, offset)
 
 
 
