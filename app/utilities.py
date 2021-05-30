@@ -5,7 +5,7 @@ from datetime import datetime as dt
 from Levenshtein import jaro_winkler, jaro
 
 
-VALID_ACTIONS = ['get']
+VALID_ACTIONS = ['history', 'get']
 
 
 def get_now_date_key():

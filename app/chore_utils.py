@@ -11,6 +11,7 @@ from elasticsearch_utils import get_es_client
 from redis_utils import get_redis_client
 from residents_utils import get_phone_number_resident, get_residents_names
 from utilities import find_closest_match, validate_sms_action
+from elasticsearch_utils import get_query_for_chore_history
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,7 +46,7 @@ def is_chore_valid(
     return is_valid_chore_name, best_match, sim_score
 
 
-def get_chore_history(
+def get_chore_history_sms_request(
         request_command: List[str],
         index: str = "chore-logs",
         *args,
@@ -54,23 +55,7 @@ def get_chore_history(
     command, name, count = request_command
     assert command.lower() == 'get', f"Invalid command {command}."
     es_field_for_name = _figure_out_query_field(name)
-    es_query = {
-        "size": count,
-        "sort": [
-            {"completion_date": {"order": "desc"}}
-        ],
-        "query": {
-            "bool": {
-                "must": [
-                    {
-                        "term": {
-                            es_field_for_name: name
-                        }
-                    }
-                ]
-            }
-        }
-    }
+    es_query = get_query_for_chore_history(name, es_field_for_name, count=count)
 
     es_client = get_es_client()
     hits = es_client.search(index=index, body=es_query)['hits']['hits']
@@ -166,7 +151,8 @@ def _get_operation_for_chore_action(action):
     assert validate_sms_action(action), f"Invalid action {action}."
 
     action_op_map = {
-        "get": get_chore_history
+        "get": get_chore_history_sms_request,
+        "history": get_chore_history_sms_request
     }
     return action_op_map[action]
 
@@ -196,3 +182,20 @@ def _get_chore_completion_message(chore_name: str) -> Union[str, None]:
     return f"Thank you for completing task {chore_name.capitalize()}"
 
 
+def get_chore_history(
+        filter_term: str,
+        filter_field: str = "completed_by",
+        sort_direction: str = "desc",
+        count: int = 20,
+        offset: int = 0,
+        index: str = "chore-logs"
+):
+    """
+
+    :return:
+    """
+    query = get_query_for_chore_history(filter_term, filter_field, sort_direction, count, offset)
+    es = get_es_client()
+    hits = es.search(index=index, body=query)['hits']['hits']
+
+    return [h['_source'] for h in hits]

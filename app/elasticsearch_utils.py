@@ -35,3 +35,32 @@ def get_es_client():
 
     return Elasticsearch(es_header)
 
+
+def get_query_for_chore_history(
+        filter_term: str,
+        filter_field: str = "completed_by",
+        sort_direction: str = "desc",
+        count: int = 20,
+        offset: int = 0
+):
+    query = {
+        "size": count,
+        "from": offset,
+        "sort": [
+            {"completion_date": {"order": sort_direction}}
+        ],
+        "query": {
+            "bool": {
+                "must": [
+                    {
+                        "term": {
+                            filter_field: filter_term
+                        }
+                    }
+                ]
+            }
+        }
+    }
+
+    return query
+
