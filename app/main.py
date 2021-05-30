@@ -5,6 +5,7 @@ from twilio.twiml.messaging_response import MessagingResponse
 
 from chore_utils import record_chore_completion, _get_operation_for_chore_action, get_chore_history
 from utilities import clean_and_split_string, validate_sms_action
+from request_models import ChoreHistorySearchRequest
 
 logger = logging.getLogger("Claremon Chore Logger")
 logger.setLevel(logging.INFO)
@@ -69,8 +70,14 @@ async def search_chore_history(
     :param sort_direction:
     :param filter_field:
     :param count:
+    :param offset:
     :return:
     """
+    filter_term = str(filter_term).lower()
+    filter_field = str(filter_field).lower()
+    sort_direction = str(sort_direction).lower()
+    count = int(count)
+    offset = int(offset)
 
     return get_chore_history(filter_term, filter_field, sort_direction, count, offset)
 
