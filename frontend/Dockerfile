@@ -9,4 +9,8 @@ RUN yarn build
 # production stage - set up nginx as the web-server and run the start script
 FROM nginx:stable-alpine as production-build
 COPY --from=build-stage /app/dist /usr.share/nginx/html
-CMD ["/scripts/start.sh"]
+COPY ./scripts/start.sh start.sh
+COPY ./.nginx/ .nginx/
+
+RUN ["chmod", "+x", "./start.sh"]
+CMD ["./start.sh"]

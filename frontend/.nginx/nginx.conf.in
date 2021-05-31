@@ -1,5 +1,4 @@
 worker_processes 2;
-working_directory /frontend;
 daemon off;
 
 events {
