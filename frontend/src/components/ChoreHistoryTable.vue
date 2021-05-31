@@ -73,7 +73,7 @@ export default {
       this.cancelToken = cancelTokenSource
 
       this.loading = true;
-      axios.get("http://127.0.0.1:8003/chore/history", {
+      axios.get("https://claremon-chores-logger.herokuapp.com/chore/history", {
         params: {
           filterTerm: this.filterTerm,
           sortField: this.sortField,
