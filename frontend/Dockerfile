@@ -1,16 +1,25 @@
-# build stage - here we build the actual frontend app
-FROM node:lts-alpine as build-stage
+FROM node:lts-alpine
+
+# add the bash command which doesn't come with Alpine images
+RUN apk update && apk add bash
+
+# install simple http server for serving static content
+RUN npm install -g http-server
+
+# make the 'app' folder the current working directory
 WORKDIR /app
+
+# copy both 'package.json' and 'package-lock.json' (if available)
 COPY package*.json ./
+
+# install project dependencies
 RUN yarn install
+
+# copy project files and folders to the current working directory (i.e. 'app' folder)
 COPY . .
+
+# build app for production with minification
 RUN yarn build
 
-# production stage - set up nginx as the web-server and run the start script
-FROM nginx:stable-alpine as production-build
-COPY --from=build-stage /app/dist /usr.share/nginx/html
-COPY ./scripts/start.sh start.sh
-COPY ./.nginx/ .nginx/
-
-RUN ["chmod", "+x", "./start.sh"]
-CMD ["./start.sh"]
+RUN ["chmod", "+x", "scripts/start.sh"]
+CMD ["/bin/bash", "scripts/start.sh"]
