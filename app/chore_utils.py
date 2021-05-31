@@ -26,6 +26,7 @@ def get_valid_chore_names(
         all_chores = redis_client.get(key).decode().split(",")
         return all_chores
 
+    redis_client.close()
     raise Exception(f"Key {key} does not exist.")
 
 
@@ -53,7 +54,7 @@ def get_chore_history_sms_request(
         **kwargs
 ):
     command, name, count = request_command
-    assert command.lower() == 'get', f"Invalid command {command}."
+    assert command.lower() in ['get', 'history'], f"Invalid command {command}."
     es_field_for_name = _figure_out_query_field(name)
     es_query = get_query_for_chore_history(name, es_field_for_name, count=count)
 
@@ -76,6 +77,14 @@ def get_chore_history_sms_request(
             chore_name = h['chore_name']
             completion_date = parser.parse(h['completion_date']).strftime('%B-%d %I:%M %p')
             message += f"{chore_name.capitalize()} @{completion_date}.\n"
+
+    else:
+        message = f"History ({count} most recent).\n\n"
+        for h in hits:
+            chore_name = h['chore_name']
+            completion_date = parser.parse(h['completion_date']).strftime('%B-%d %I:%M %p')
+            completed_by = h['completed_by']
+            message += f"{chore_name.capitalize()} by {completed_by.capitalize()} @ {completion_date}.\n"
 
     return message, 200
 
@@ -179,6 +188,7 @@ def _get_chore_completion_message(chore_name: str) -> Union[str, None]:
     if redis_client.hexists(hash_name, chore_name):
         return redis_client.hget(hash_name, chore_name).decode()
 
+    redis_client.close()
     return f"Thank you for completing task {chore_name.capitalize()}"
 
 

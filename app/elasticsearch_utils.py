@@ -43,13 +43,17 @@ def get_query_for_chore_history(
         count: int = 20,
         offset: int = 0
 ):
-    query = {
+
+    base_query = {
         "size": count,
         "from": offset,
         "sort": [
             {"completion_date": {"order": sort_direction}}
-        ],
-        "query": {
+        ]
+    }
+
+    if filter_field is not None:
+        base_query['query'] = {
             "bool": {
                 "must": [
                     {
@@ -60,9 +64,13 @@ def get_query_for_chore_history(
                 ]
             }
         }
-    }
 
-    return query
+    else:
+        base_query['query'] = {
+            "match_all": {}
+        }
+
+    return base_query
 
 
 def chore_history_filter_query(

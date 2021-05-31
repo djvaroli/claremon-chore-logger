@@ -11,6 +11,7 @@ def get_phone_number_resident(
     if redis_client.hexists(hash_name, key=phone_number):
         resident = redis_client.hget(name=hash_name, key=phone_number).decode()
 
+    redis_client.close()
     return resident
 
 
@@ -24,4 +25,5 @@ def get_residents_names():
         for phone, resident_name in residents_encoded.items():
             resident_names.append(resident_name.decode().lower())
 
+    redis_client.close()
     return resident_names
